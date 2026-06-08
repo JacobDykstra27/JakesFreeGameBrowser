@@ -1,7 +1,7 @@
 # JakesFreeGameBrowser
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-[Project Demo](https://youtu.be/DjNAz7ewNUo)
-[Project Walkthrough]((https://youtu.be/_fUJPSArZkQ)
+- This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+- [Project Demo on YouTube](https://youtu.be/DjNAz7ewNUo)
+- [Project Walkthrough on YouTube](https://youtu.be/_fUJPSArZkQ)
 
 ## Get started
 
