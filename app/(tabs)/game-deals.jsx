@@ -8,43 +8,6 @@ import { buildGameStoreUrl } from "../../APIs/getCheapSharkAPIs";
 import { clearNamespaceCache } from "../../APIs/cacheStorage";
 import { useWishlist } from "../../hooks/useWishlist";
 
-const STORE_NAMES = {
-	1: "Steam",
-	2: "GamersGate",
-	3: "GreenManGaming",
-	4: "Amazon",
-	5: "GameStop",
-	6: "Direct2Drive",
-	7: "GOG",
-	8: "Origin",
-	9: "Get Games",
-	10: "Shiny Loot",
-	11: "Humble Store",
-	12: "Desura",
-	13: "Uplay",
-	14: "IndieGameStand",
-	15: "Fanatical",
-	16: "GamesRocket",
-	17: "Games Republic",
-	18: "Sila Games",
-	19: "Playfield",
-	20: "ImperialGames",
-	21: "WinGameStore",
-	22: "FunStockDigital",
-	23: "GameBillet",
-	24: "Voidu",
-	25: "Epic Games Store",
-	26: "Razer Game Store",
-	27: "Gamesplanet",
-	28: "Gamesload",
-	29: "2Game",
-	30: "IndieGala",
-	31: "Blizzard Shop",
-	32: "AllYouPlay",
-	33: "DLGamer",
-	34: "Noctre",
-	35: "DreamGame"
-};
 
 const styles = StyleSheet.create({
 	container: {
@@ -119,26 +82,7 @@ export default function GameDealsScreen() {
 				desc: true,
 				pageSize: 20,
 			});
-
-			const normalizedDeals = deals.map((deal) => ({
-				...deal,
-				id: deal.dealID,
-				title: deal.title,
-				name: deal.title,
-				image: deal.thumb,
-				thumbnail: deal.thumb,
-				price: `$${Number(deal.salePrice).toFixed(2)}`,
-				salePrice: deal.salePrice,
-				normalPrice: deal.normalPrice,
-				worth: `$${Number(deal.normalPrice).toFixed(2)}`,
-				link: buildGameStoreUrl(deal),
-				storeLink: buildGameStoreUrl(deal),
-				storeName: STORE_NAMES[Number(deal.storeID)] || `Store ${deal.storeID}`,
-				source: "CheapShark",
-				addedAt: new Date().toISOString(),
-			}));
-
-			setGames(normalizedDeals);
+			setGames(deals);
 		} catch (e) {
 			console.error("Error loading game deals:", e);
 			setError(e.message || "Failed to load game deals");
@@ -252,7 +196,7 @@ export default function GameDealsScreen() {
 			<FlatList
 				data={games}
 				renderItem={({ item }) => (
-					<GameCard game={item} onAddToWishlist={handleAddToWishlist} />
+					<GameCard deal={item} onAddToWishlist={handleAddToWishlist} />
 				)}
 				keyExtractor={(item) => item.id.toString()}
 				contentContainerStyle={styles.listContent}

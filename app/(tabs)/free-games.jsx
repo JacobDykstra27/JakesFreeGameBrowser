@@ -3,28 +3,11 @@ import { useState, useEffect, useCallback } from "react";
 import { GameCard } from "../../components/GameCard";
 import { AddToWishlistModal } from "../../components/AddToWishlistModal";
 import { on as onEvent } from "../../APIs/eventBus";
-import { getGamerPowerGiveaways } from "../../APIs/getSaleAPIs";
+import { useCheapShark } from "../../hooks/useCheapShark";
+import { buildGameStoreUrl } from "../../APIs/getCheapSharkAPIs";
 import { clearNamespaceCache } from "../../APIs/cacheStorage";
 import { useWishlist } from "../../hooks/useWishlist";
 
-function isFreeGame(game) {
-	if (!game || typeof game !== "object") {
-		return false;
-	}
-
-	const numericSalePrice = Number.parseFloat(String(game.salePrice ?? game.sale_price ?? ""));
-
-	if (Number.isFinite(numericSalePrice)) {
-		return numericSalePrice === 0;
-	}
-
-	if (game.is_free === true || String(game.price ?? "").toLowerCase() === "free") {
-		return true;
-	}
-
-	// GamerPower giveaway entries are free by definition.
-	return Boolean(game.open_giveaway_url || game.giveaway_url);
-}
 
 const styles = StyleSheet.create({
 	container: {
@@ -71,40 +54,46 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		textAlign: "center",
 	},
+	infoText: {
+		color: "#999",
+		fontSize: 12,
+		marginTop: 8,
+		textAlign: "center",
+	},
 });
 
-export default function FreeGamesScreen() {
+export default function GameDealsScreen() {
 	const [games, setGames] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [showWishlistModal, setShowWishlistModal] = useState(false);
 	const [selectedGameForWishlist, setSelectedGameForWishlist] = useState(null);
+	const { fetchDeals } = useCheapShark();
 	const { wishlists, addGameToWishlist, createWishlist } = useWishlist();
 
-	const loadFreeGames = useCallback(async () => {
+	const loadGameDeals = useCallback(async () => {
 		try {
 			setLoading(true);
 			setError(null);
 
-			// Fetch free games (type=game filters for games, not loot)
-			const freeGames = await getGamerPowerGiveaways({
-				type: "game",
-				sortBy: "date",
-				order: "desc",
+			const deals = await fetchDeals({
+				onSale: true,
+				sortBy: "DealRating",
+				desc: true,
+				pageSize: 20,
 			});
-
-			setGames(freeGames.filter(isFreeGame));
+			setGames(deals);
 		} catch (e) {
-			console.error("Error loading free games:", e);
-			setError(e.message || "Failed to load free games");
+			console.error("Error loading game deals:", e);
+			setError(e.message || "Failed to load game deals");
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [fetchDeals]);
 
 	useEffect(() => {
-		loadFreeGames();
-	}, [loadFreeGames]);
+		loadGameDeals();
+	}, [loadGameDeals]);
 
 	const handleAddToWishlist = (game) => {
 		setSelectedGameForWishlist(game);
@@ -116,25 +105,31 @@ export default function FreeGamesScreen() {
 			try {
 				await addGameToWishlist(
 					{
-						id: selectedGameForWishlist.id || Math.random().toString(),
+						id: selectedGameForWishlist.id || selectedGameForWishlist.dealID,
 						title: selectedGameForWishlist.title,
+						name: selectedGameForWishlist.name,
 						image: selectedGameForWishlist.image,
-						url: selectedGameForWishlist.open_giveaway_url,
-						link: selectedGameForWishlist.open_giveaway_url,
-						storeLink: selectedGameForWishlist.open_giveaway_url,
+						thumbnail: selectedGameForWishlist.thumbnail,
+						url: selectedGameForWishlist.link,
+						link: selectedGameForWishlist.link,
+						storeLink: selectedGameForWishlist.link,
 						steamAppID:
 							selectedGameForWishlist.steamAppID ||
 							selectedGameForWishlist.steamAppId ||
 							selectedGameForWishlist.steam_app_id ||
 							null,
+						price: selectedGameForWishlist.price,
+						salePrice: selectedGameForWishlist.salePrice,
+						normalPrice: selectedGameForWishlist.normalPrice,
 						worth: selectedGameForWishlist.worth,
-						type: selectedGameForWishlist.type,
-						platform: selectedGameForWishlist.platform || selectedGameForWishlist.platforms,
-						store: selectedGameForWishlist.store || selectedGameForWishlist.storeName || selectedGameForWishlist.store_name,
-						source: "GamerPower",
+						store: selectedGameForWishlist.storeName,
+						storeName: selectedGameForWishlist.storeName,
+						dealID: selectedGameForWishlist.dealID,
+						storeID: selectedGameForWishlist.storeID,
+						source: "CheapShark",
 						addedAt: new Date().toISOString(),
 					},
-					wishlistId
+					wishlistId,
 				);
 				setShowWishlistModal(false);
 				setSelectedGameForWishlist(null);
@@ -156,20 +151,20 @@ export default function FreeGamesScreen() {
 
 	const handleRefresh = async () => {
 		try {
-			await clearNamespaceCache("gamerpower");
-			await loadFreeGames();
+			await clearNamespaceCache("cheapshark");
+			await loadGameDeals();
 		} catch (err) {
-			console.error("Error refreshing games:", err);
+			console.error("Error refreshing deals:", err);
 		}
 	};
 
 	// Subscribe to header refresh event
 	useEffect(() => {
-		const unsub = onEvent("refresh_free_games", () => {
+		const unsub = onEvent("refresh_game_deals", () => {
 			handleRefresh();
 		});
 		return () => unsub && unsub();
-	}, [loadFreeGames]);
+	}, [loadGameDeals]);
 
 	if (loading) {
 		return (
@@ -191,18 +186,17 @@ export default function FreeGamesScreen() {
 	if (games.length === 0) {
 		return (
 			<View style={styles.emptyContainer}>
-				<Text style={styles.emptyText}>No free games available right now</Text>
+				<Text style={styles.emptyText}>No game deals available right now</Text>
 			</View>
 		);
 	}
 
 	return (
 		<View style={styles.container}>
-			{/* header menu moved to Tabs layout headerRight */}
 			<FlatList
 				data={games}
 				renderItem={({ item }) => (
-					<GameCard game={item} onAddToWishlist={handleAddToWishlist} showPrice={false} />
+					<GameCard deal={item} onAddToWishlist={handleAddToWishlist} />
 				)}
 				keyExtractor={(item) => item.id.toString()}
 				contentContainerStyle={styles.listContent}

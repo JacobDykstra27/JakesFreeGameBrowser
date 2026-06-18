@@ -1,4 +1,7 @@
 import { readCache, writeCache, clearNamespaceCache } from "./cacheStorage";
+import Game from "../models/Game";
+import Deal from "../models/Deal";
+import Store from "../models/Store";
 
 const CHEAPSHARK_BASE_URL = "https://www.cheapshark.com/api/1.0";
 const CHEAPSHARK_NAMESPACE = "cheapshark";
@@ -217,15 +220,11 @@ export async function getDeals(options = {}) {
 		const deals = Array.isArray(data) ? data : [];
 
 		// Normalize deal data
-		const normalizedDeals = deals.map((deal) => ({
-			...deal,
-			releaseDate: convertUnixTimestamp(deal.releaseDate),
-			lastChange: convertUnixTimestamp(deal.lastChange),
-			salePrice: Number.parseFloat(deal.salePrice) || 0,
-			normalPrice: Number.parseFloat(deal.normalPrice) || 0,
-			savings: Number.parseFloat(deal.savings) || 0,
-			isOnSale: deal.isOnSale === "1" || deal.isOnSale === 1,
-		}));
+		const normalizedDeals = deals.map((o) => {
+			const game = Game.fromCheapSharkAPI(o);
+			const store = new Store; // TODO: empty store object fix later 
+			return Deal.fromCheapSharkAPI(o, game, store);
+		});
 
 		// Cache results
 		await writeCache(CHEAPSHARK_NAMESPACE, cacheKey, normalizedDeals, CHEAPSHARK_CACHE_TTL_MS);

@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
 	},
 });
 
-export function GameCard({ game, onAddToWishlist, showPrice = true }) {
+export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
 	const [debugEnabled, setDebugEnabled] = useState(isDebugMode());
 	const [debugVisible, setDebugVisible] = useState(false);
 
@@ -97,44 +97,24 @@ export function GameCard({ game, onAddToWishlist, showPrice = true }) {
 		});
 		return () => unsub && unsub();
 	}, []);
+
 	const handleOpenLink = async () => {
-		const link =
-			game.link ||
-			game.storeLink ||
-			game.open_giveaway_url ||
-			game.giveaway_url ||
-			game.url;
-
-		if (link) {
-			console.log(`${game.title || game.name || "Unknown Game"}: ${link}`);
-			await WebBrowser.openBrowserAsync(link);
+		if (deal.gameLink) {
+			await WebBrowser.openBrowserAsync(deal.gameLink);
 		}
-	};
-
-	// Format the game image with fallback
-	const imageUri = game.image || game.thumbnail;
-	const storeLabel = game.store || game.storeName || game.store_name || game.platform || game.platforms;
-	const numericSalePrice = Number.parseFloat(String(game.salePrice ?? game.sale_price ?? ""));
-	const isFree =
-		game.is_free === true ||
-		String(game.price ?? "").toLowerCase() === "free" ||
-		numericSalePrice === 0 ||
-		Boolean(game.open_giveaway_url || game.giveaway_url);
-	const displayPrice =
-		game.salePrice ?? game.sale_price ?? game.price ?? game.worth ?? game.normalPrice ?? game.normal_price;
-	const shouldRenderPrice = showPrice && !isFree && displayPrice !== undefined && displayPrice !== null;
+	};	
 
 	return (
 		<View style={styles.card}>
-			{imageUri && (
+			{deal.game.imageUrl && (
 				<TouchableOpacity
 					style={styles.imageButton}
 					onPress={handleOpenLink}
 					activeOpacity={0.85}
-					disabled={!game.link && !game.storeLink && !game.open_giveaway_url && !game.giveaway_url && !game.url}
+					disabled={!deal.gameLink}
 				>
 					<Image
-						source={{ uri: imageUri }}
+						source={{ uri:deal.game.imageUrl }}
 						style={styles.cardImage}
 						resizeMode="cover"
 						onError={() => {
@@ -146,38 +126,30 @@ export function GameCard({ game, onAddToWishlist, showPrice = true }) {
 
 			<View style={styles.cardContent}>
 				<Text style={styles.cardTitle} numberOfLines={2}>
-					{game.title || game.name}
+					{deal.game.title}
 				</Text>
 
-				{game.description && (
-					<Text style={styles.cardSubtitle} numberOfLines={2}>
-						{game.description}
-					</Text>
-				)}
-
-				{(game.type || storeLabel) && (
+				{(deal.game.genresList.length > 0 || deal.store) && (
 					<View style={styles.tagsContainer}>
-						{game.type && (
-							<View style={styles.tag}>
-								<Text style={styles.tagText}>{game.type}</Text>
+						{deal.game.genresList.map((genre) => (
+							<View key={genre.id} style={styles.tag}>
+								<Text style={styles.tagText}>{genre.name}</Text>
 							</View>
-						)}
-						{storeLabel && (
+))}
+
+						{deal.store?.name && (
 							<View style={styles.tag}>
-								<Text style={styles.tagText}>{storeLabel}</Text>
+								<Text style={styles.tagText}>{deal.store.name}</Text>
 							</View>
 						)}
 					</View>
 				)}
 
 				<View style={styles.cardFooter}>
-					{shouldRenderPrice ? (
-						<View style={styles.priceTag}>
-							<Text style={styles.priceText}>{String(displayPrice)}</Text>
-						</View>
-					) : (
-						<View />
-					)}
+					<View style={styles.priceTag}>
+						<Text style={styles.priceText}>{String(deal.salePrice)}</Text>
+					</View>
+
 
 					<TouchableOpacity style={styles.linkButton} onPress={handleOpenLink}>
 						<MaterialCommunityIcons name="open-in-new" size={14} color="#fff" />
@@ -185,7 +157,7 @@ export function GameCard({ game, onAddToWishlist, showPrice = true }) {
 					</TouchableOpacity>
 
 					{onAddToWishlist && (
-						<TouchableOpacity onPress={() => onAddToWishlist(game)}>
+						<TouchableOpacity onPress={() => onAddToWishlist(deal.game)}>
 							<MaterialCommunityIcons name="heart-outline" size={20} color="#ff6b6b" />
 						</TouchableOpacity>
 					)}
