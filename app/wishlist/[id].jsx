@@ -19,6 +19,8 @@ import { GameCard } from "../../components/GameCard";
 import { PriceComparison } from "../../components/PriceComparison";
 import { useWishlist } from "../../hooks/useWishlist";
 import { wishlistStorage } from "../../hooks/wishlistStorage";
+import {getDealsByIDs} from "../../APIs/getCheapSharkAPIs"; 
+import Wishlist from "../../models/Wishlist";
 
 const styles = StyleSheet.create({
 	container: {
@@ -183,6 +185,7 @@ export default function WishlistDetailScreen() {
 	const [showRenameModal, setShowRenameModal] = useState(false);
 	const [wishlistNameDraft, setWishlistNameDraft] = useState("");
 	const [savingName, setSavingName] = useState(false);
+	const [deals, setDeals] = useState([]);
 	const wishlistId = Array.isArray(id) ? id[0] : id;
 	const topPadding = (StatusBar.currentHeight || 0) + 12;
 
@@ -210,28 +213,19 @@ export default function WishlistDetailScreen() {
 	}, [loadWishlistCallback]);
 
 
+	useEffect(() => {
+		const loadDeals = async () => {
+			loadWishlistCallback();
+			const result = await getDealsByIDs(
+				wishlist.gamesList.map(g => g.id)
+			);
 
-	const handleRemoveGame = (gameId) => {
-		Alert.alert("Remove Game", "Remove this game from your wishlist?", [
-			{ text: "Cancel", style: "cancel" },
-			{
-				text: "Remove",
-				style: "destructive",
-				onPress: async () => {
-					try {
-						await removeGameFromWishlist(wishlistId, gameId);
-						// Update local state
-						setWishlist((prev) => ({
-							...prev,
-							games: prev.games.filter((g) => g.id !== gameId),
-						}));
-					} catch (_err) {
-						Alert.alert("Error", "Failed to remove game");
-					}
-				},
-			},
-		]);
-	};
+			setDeals(result);
+		};
+
+		loadDeals();
+	}, [wishlist.gamesList]);
+
 
 	const handleExport = async () => {
 		try {
@@ -323,34 +317,23 @@ export default function WishlistDetailScreen() {
 		);
 	}
 
-	const totalWorth = wishlist.games.reduce((sum, game) => {
-		const worth = parseFloat(String(game.worth || 0).replace(/[^0-9.-]/g, "")) || 0;
-		return sum + worth;
-	}, 0);
-
-	const getSteamAppID = (game) =>
-		game.steamAppID || game.steamAppId || game.steam_app_id || game.appID || null;
-
 	return (
 		<View style={[styles.container, { paddingTop: topPadding }]}>
-			{renderHeader(
-				`${wishlist.games.length} game${wishlist.games.length !== 1 ? "s" : ""} • Total Value: $${totalWorth.toFixed(2)}`,
-			)}
-
 			<FlatList
-				data={wishlist.games}
+				data={deals}
 				renderItem={({ item }) => (
 					<View style={styles.gameCard}>
 						<GameCard
-							game={item}
+							deal={item}
 							onAddToWishlist={() => {
 								// Game already in wishlist, show remove option instead
-								handleRemoveGame(item.id);
+								wishlist.removeGame(item.game.id)
+								setWishlist({ ...wishlist });
 							}}
 						/>
-						{getSteamAppID(item) && <PriceComparison steamAppID={getSteamAppID(item)} />}
+						{item.game.steamAppID && <PriceComparison steamAppID={item.game.steamAppID} />}
 						<TouchableOpacity
-							onPress={() => handleRemoveGame(item.id)}
+							onPress={() => (wishlist.removeGame(item.game.id), setWishlist({ ...wishlist }))}
 							style={{
 								padding: 8,
 								backgroundColor: "#1a1a1a",
