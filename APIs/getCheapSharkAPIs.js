@@ -9,6 +9,10 @@ const CHEAPSHARK_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 const USER_AGENT = "JakesFreeGameApp/1.0 (jakehaloodst@gmail.com)";
 
+let deals = [];
+let games = [];
+let stores = [];
+
 /**
  * Fetch options with required User-Agent header
  */
@@ -20,7 +24,7 @@ function getFetchOptions() {
 	};
 }
 
-/**
+/**f
  * Convert Unix timestamp (seconds) to milliseconds
  */
 function convertUnixTimestamp(unixSeconds) {
@@ -171,69 +175,87 @@ export async function getDealsBySteamAppID(steamAppID, options = {}) {
  * @param {object} options - Filter options
  * @returns {Promise<Array>} Array of deals
  */
-export async function getDeals(options = {}) {
+export async function initData(options = {}) {
 	const query = options;
 	const cacheKey = `getDeals:${JSON.stringify(query)}`;
+	const USE_CASHE = false;
 
 	// Check cache first
-	const cached = await readCache(CHEAPSHARK_NAMESPACE, cacheKey);
-	if (cached) {
-		return cached;
-	}
-
-	try {
-		const params = new URLSearchParams({
-			pageNumber: options.pageNumber || 0,
-			pageSize: Math.min(options.pageSize || 20, 60), // Max 60
-			sortBy: options.sortBy || "DealRating",
-			desc: options.desc ? 1 : 0,
-			...(options.storeID && { storeID: options.storeID }),
-			...(options.lowerPrice !== undefined && {
-				lowerPrice: options.lowerPrice,
-			}),
-			...(options.upperPrice !== undefined && {
-				upperPrice: options.upperPrice,
-			}),
-			...(options.metacritic && { metacritic: options.metacritic }),
-			...(options.steamRating && { steamRating: options.steamRating }),
-			...(options.title && { title: options.title }),
-			...(options.exact && { exact: 1 }),
-			...(options.onSale && { onSale: 1 }),
-		});
-
-		const response = await fetch(
-			`${CHEAPSHARK_BASE_URL}/deals?${params}`,
-			getFetchOptions()
-		);
-
-		if (!response.ok) {
-			if (response.status === 429) {
-				const retryAfter = response.headers.get("Retry-After");
-				console.warn(
-					`CheapShark rate limited. Retry after ${retryAfter} seconds`
-				);
-			}
-			throw new Error(`CheapShark API error: ${response.status}`);
+	if (USE_CASHE) {
+		let cached = await readCache(CHEAPSHARK_NAMESPACE, cacheKey);
+		if (cached) {
+			return cached;
 		}
-
-		const data = await response.json();
-		const deals = Array.isArray(data) ? data : [];
-
-		// Normalize deal data
-		const normalizedDeals = deals.map((o) => {
-			const game = Game.fromCheapSharkAPI(o);
-			const store = new Store; // TODO: empty store object fix later 
-			return Deal.fromCheapSharkAPI(o, game, store);
-		});
-
-		// Cache results
-		await writeCache(CHEAPSHARK_NAMESPACE, cacheKey, normalizedDeals, CHEAPSHARK_CACHE_TTL_MS);
-
-		return normalizedDeals;
-	} catch (err) {
-		console.error("Error getting deals:", err);
-		return [];
 	}
+
+
+	const params = new URLSearchParams({
+		pageNumber: options.pageNumber || 0,
+		pageSize: Math.min(options.pageSize || 20, 60), // Max 60
+		sortBy: options.sortBy || "DealRating",
+		desc: options.desc ? 1 : 0,
+		...(options.storeID && { storeID: options.storeID }),
+		...(options.lowerPrice !== undefined && {
+			lowerPrice: options.lowerPrice,
+		}),
+		...(options.upperPrice !== undefined && {
+			upperPrice: options.upperPrice,
+		}),
+		...(options.metacritic && { metacritic: options.metacritic }),
+		...(options.steamRating && { steamRating: options.steamRating }),
+		...(options.title && { title: options.title }),
+		...(options.exact && { exact: 1 }),
+		...(options.onSale && { onSale: 1 }),
+	});
+
+	const response = await fetch(
+		`${CHEAPSHARK_BASE_URL}/deals?${params}`,
+		getFetchOptions()
+	);
+
+
+	if (!response.ok) {
+		if (response.status === 429) {
+			const retryAfter = response.headers.get("Retry-After");
+			console.warn(
+				`CheapShark rate limited. Retry after ${retryAfter} seconds`
+			);
+		}
+		throw new Error(`CheapShark API error: ${response.status}`);
+	}
+
+	const data = await response.json();
+	let tempDeals = Array.isArray(data) ? data : [];
+
+	games = new Map(tempDeals.map((game) => {
+		return [game.gameID, Game.fromCheapSharkAPI(game)];
+	}));
+
+	const storesResponse = await fetch(
+		`${CHEAPSHARK_BASE_URL}/stores`,
+		getFetchOptions()
+	);
+	const storesData = await storesResponse.json();
+
+	stores = new Map(storesData.map((store) => {
+		return [store.storeID, Store.fromCheapSharkAPI(store)];
+	}));
+
+	// Normalize deal data
+	deals = tempDeals.map((o) => {
+		return Deal.fromCheapSharkAPI(o);
+	});
+
+	// Cache results
+	if (USE_CASHE) await writeCache(CHEAPSHARK_NAMESPACE, cacheKey, deals, CHEAPSHARK_CACHE_TTL_MS);
+
+	console.log(games);
+	console.log(deals);
+	console.log(stores);
+}
+
+export function getDeals(){
+	return deals;
 }
 
 /**
@@ -242,7 +264,7 @@ export async function getDeals(options = {}) {
  */
 export async function getStores() {
 	const cacheKey = "getStores:all";
-
+	return stores;
 	// Check cache first
 	const cached = await readCache(CHEAPSHARK_NAMESPACE, cacheKey);
 	if (cached) {
@@ -358,4 +380,45 @@ export async function getCacheStats() {
 		console.error("Error getting cache stats:", err);
 		return null;
 	}
+}
+
+
+export async function getDealsByIDs(dealIDs = []) {
+	if (!Array.isArray(dealIDs) || dealIDs.length === 0) {
+		return [];
+	}
+
+	try {
+		const response = await fetch(
+			`${CHEAPSHARK_BASE_URL}/games?ids=${encodeURIComponent(dealIDs.join(","))}&format=array`,
+			getFetchOptions()
+		);
+
+		if (!response.ok) {
+			console.log(`${CHEAPSHARK_BASE_URL}/games?ids=${encodeURIComponent(dealIDs.join(","))}&format=array`);
+			throw new Error(`CheapShark API error: ${response.status}`);
+		}
+
+		const data = await response.json();
+		const deals = Array.isArray(data) ? data : [];
+
+		return deals.map((o) => {
+			const game = Game.fromCheapSharkAPI(o.info);
+			const store = new Store; // TODO: empty store object fix later 
+			return Deal.fromMultipleGameLookupCSAPI(o, game, store);
+		});
+	} catch (err) {
+		console.error("Error getting deals by IDs:", err);
+		return [];
+	}
+}
+
+
+export function getGames(){
+	return games;
+}
+
+export function getGame(ID){
+	console.log(games.get(ID));
+	return games.get(ID);
 }

@@ -1,5 +1,14 @@
 class Game{
-    constructor() {}
+    
+    id;
+    title;
+    imageUrl;
+    steamAppId;
+    genresList = [];
+
+    constructor(t) {
+        this.title = t;
+    }
 
     static fromCheapSharkAPI(o)
     {
@@ -8,13 +17,13 @@ class Game{
         game.id = o.gameID;
         game.title = o.title;
         game.imageUrl = o.thumb;
+        game.steamAppId = o.steamAppID;
         return game;
     };
 
-    id;
-    title;
-    imageUrl;
-    genresList = [];
+    setID(id){
+        this.id = id;
+    }
 
     addGenre(genre) {
         if (this.genresList.includes(genre))

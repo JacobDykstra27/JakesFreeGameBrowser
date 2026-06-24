@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { isDebugMode } from "../APIs/debugMode";
 import { on as onEvent } from "../APIs/eventBus";
 import GameDebugModal from "./GameDebugModal";
+import {getGame} from "../APIs/getCheapSharkAPIs";
 
 const styles = StyleSheet.create({
 	card: {
@@ -88,8 +89,14 @@ const styles = StyleSheet.create({
 });
 
 export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
+
 	const [debugEnabled, setDebugEnabled] = useState(isDebugMode());
 	const [debugVisible, setDebugVisible] = useState(false);
+	let game = getGame(deal.gameID);
+	let imageUrl = game.imageUrl;
+	let title = game.title;
+	let genresList = game.genresList;
+
 
 	useEffect(() => {
 		const unsub = onEvent("debug_mode_changed", (val) => {
@@ -106,7 +113,7 @@ export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
 
 	return (
 		<View style={styles.card}>
-			{deal.game.imageUrl && (
+			{imageUrl && (
 				<TouchableOpacity
 					style={styles.imageButton}
 					onPress={handleOpenLink}
@@ -114,7 +121,7 @@ export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
 					disabled={!deal.gameLink}
 				>
 					<Image
-						source={{ uri:deal.game.imageUrl }}
+						source={{ uri:imageUrl }}
 						style={styles.cardImage}
 						resizeMode="cover"
 						onError={() => {
@@ -126,16 +133,16 @@ export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
 
 			<View style={styles.cardContent}>
 				<Text style={styles.cardTitle} numberOfLines={2}>
-					{deal.game.title}
+					{title}
 				</Text>
 
-				{(deal.game.genresList.length > 0 || deal.store) && (
+				{(genresList.length > 0 || deal.store) && (
 					<View style={styles.tagsContainer}>
-						{deal.game.genresList.map((genre) => (
+						{genresList.map((genre) => (
 							<View key={genre.id} style={styles.tag}>
 								<Text style={styles.tagText}>{genre.name}</Text>
 							</View>
-))}
+						))}
 
 						{deal.store?.name && (
 							<View style={styles.tag}>
@@ -167,7 +174,7 @@ export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
 							<TouchableOpacity onPress={() => setDebugVisible(true)} style={{ marginLeft: 8 }}>
 								<MaterialCommunityIcons name="code-tags" size={20} color="#80ff80" />
 							</TouchableOpacity>
-							<GameDebugModal visible={debugVisible} onClose={() => setDebugVisible(false)} data={game} title={game.title || game.name} />
+							<GameDebugModal visible={debugVisible} onClose={() => setDebugVisible(false)} data={deal.game} title={title} />
 						</>
 					)}
 				</View>

@@ -3,8 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { GameCard } from "../../components/GameCard";
 import { AddToWishlistModal } from "../../components/AddToWishlistModal";
 import { on as onEvent } from "../../APIs/eventBus";
-import { useCheapShark } from "../../hooks/useCheapShark";
-import { buildGameStoreUrl } from "../../APIs/getCheapSharkAPIs";
+import { buildGameStoreUrl, getDeals, initData} from "../../APIs/getCheapSharkAPIs";
 import { clearNamespaceCache } from "../../APIs/cacheStorage";
 import { useWishlist } from "../../hooks/useWishlist";
 
@@ -62,38 +61,11 @@ const styles = StyleSheet.create({
 	},
 });
 
-export default function GameDealsScreen() {
-	const [games, setGames] = useState([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
-	const [showWishlistModal, setShowWishlistModal] = useState(false);
-	const [selectedGameForWishlist, setSelectedGameForWishlist] = useState(null);
-	const { fetchDeals } = useCheapShark();
-	const { wishlists, addGameToWishlist, createWishlist } = useWishlist();
 
-	const loadGameDeals = useCallback(async () => {
-		try {
-			setLoading(true);
-			setError(null);
 
-			const deals = await fetchDeals({
-				onSale: true,
-				sortBy: "DealRating",
-				desc: true,
-				pageSize: 20,
-			});
-			setGames(deals);
-		} catch (e) {
-			console.error("Error loading game deals:", e);
-			setError(e.message || "Failed to load game deals");
-		} finally {
-			setLoading(false);
-		}
-	}, [fetchDeals]);
 
-	useEffect(() => {
-		loadGameDeals();
-	}, [loadGameDeals]);
+
+
 
 	const handleAddToWishlist = (game) => {
 		setSelectedGameForWishlist(game);
@@ -101,31 +73,28 @@ export default function GameDealsScreen() {
 	};
 
 	const handleSelectWishlist = async (wishlistId) => {
-		if (selectedGameForWishlist) {
+		if (game) {
 			try {
 				await addGameToWishlist(
 					{
-						id: selectedGameForWishlist.id || selectedGameForWishlist.dealID,
-						title: selectedGameForWishlist.title,
-						name: selectedGameForWishlist.name,
-						image: selectedGameForWishlist.image,
-						thumbnail: selectedGameForWishlist.thumbnail,
-						url: selectedGameForWishlist.link,
-						link: selectedGameForWishlist.link,
-						storeLink: selectedGameForWishlist.link,
+						id: game.id ,
+						title: game.title,
+						name: game.name,
+						image: game.image,
+						thumbnail: game.thumbnail,
+						url: game.link,
+						link: game.link,
+						storeLink: game.link,
 						steamAppID:
-							selectedGameForWishlist.steamAppID ||
-							selectedGameForWishlist.steamAppId ||
-							selectedGameForWishlist.steam_app_id ||
-							null,
-						price: selectedGameForWishlist.price,
-						salePrice: selectedGameForWishlist.salePrice,
-						normalPrice: selectedGameForWishlist.normalPrice,
-						worth: selectedGameForWishlist.worth,
-						store: selectedGameForWishlist.storeName,
-						storeName: selectedGameForWishlist.storeName,
-						dealID: selectedGameForWishlist.dealID,
-						storeID: selectedGameForWishlist.storeID,
+							game.steamAppID || null,
+						price: game.price,
+						salePrice: game.salePrice,
+						normalPrice: game.normalPrice,
+						worth: game.worth,
+						store: game.storeName,
+						storeName: game.storeName,
+						dealID: game.dealID,
+						storeID: game.storeID,
 						source: "CheapShark",
 						addedAt: new Date().toISOString(),
 					},
@@ -158,6 +127,50 @@ export default function GameDealsScreen() {
 		}
 	};
 
+
+
+
+
+
+
+
+
+
+
+
+export default function GameDealsScreen() {
+	const [deals, setDeals] = useState([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
+	const [showWishlistModal, setShowWishlistModal] = useState(false);
+	const [selectedGameForWishlist, setSelectedGameForWishlist] = useState(null);
+	const { wishlists, addGameToWishlist, createWishlist } = useWishlist();
+
+	const loadGameDeals = useCallback(async () => {
+		try {
+			await initData({
+				onSale: true,
+				sortBy: "DealRating",
+				desc: true,
+				pageSize: 20,
+			});
+			setDeals(getDeals());
+		} catch (e) {
+			console.error("Error loading game deals:", e);
+			setError(e.message || "Failed to load game deals");
+		} finally {
+			setLoading(false);
+		}
+	}, []);
+
+	useEffect(() => {
+		loadGameDeals();
+	}, []);
+
+
+
+
+
 	// Subscribe to header refresh event
 	useEffect(() => {
 		const unsub = onEvent("refresh_game_deals", () => {
@@ -166,15 +179,19 @@ export default function GameDealsScreen() {
 		return () => unsub && unsub();
 	}, [loadGameDeals]);
 
+
+
 	if (loading) {
 		return (
 			<View style={styles.loadingContainer}>
 				<ActivityIndicator size="large" color="#007AFF" />
 			</View>
 		);
-	}
+	} 
 
-	if (error) {
+
+
+	else if (error) {
 		return (
 			<View style={styles.errorContainer}>
 				<Text style={styles.errorText}>❌ {error}</Text>
@@ -183,7 +200,9 @@ export default function GameDealsScreen() {
 		);
 	}
 
-	if (games.length === 0) {
+
+
+	else if (deals.length === 0) {
 		return (
 			<View style={styles.emptyContainer}>
 				<Text style={styles.emptyText}>No game deals available right now</Text>
@@ -191,27 +210,28 @@ export default function GameDealsScreen() {
 		);
 	}
 
-	return (
-		<View style={styles.container}>
-			<FlatList
-				data={games}
-				renderItem={({ item }) => (
-					<GameCard deal={item} onAddToWishlist={handleAddToWishlist} />
-				)}
-				keyExtractor={(item) => item.id.toString()}
-				contentContainerStyle={styles.listContent}
-				scrollIndicatorInsets={{ right: 1 }}
-			/>
-			<AddToWishlistModal
-				visible={showWishlistModal}
-				wishlists={wishlists}
-				onSelectWishlist={handleSelectWishlist}
-				onCreateNew={handleCreateNewWishlist}
-				onCancel={() => {
-					setShowWishlistModal(false);
-					setSelectedGameForWishlist(null);
-				}}
-			/>
-		</View>
-	);
+
+	else return (
+			<View style={styles.container}>
+				<FlatList
+					data={deals}
+					renderItem={({ item }) => (
+						<GameCard deal={item} onAddToWishlist={handleAddToWishlist} />
+					)}
+					keyExtractor={(item) => item.id.toString()}
+					contentContainerStyle={styles.listContent}
+					scrollIndicatorInsets={{ right: 1 }}
+				/>
+				<AddToWishlistModal
+					visible={showWishlistModal}
+					wishlists={wishlists}
+					onSelectWishlist={handleSelectWishlist}
+					onCreateNew={handleCreateNewWishlist}
+					onCancel={() => {
+						setShowWishlistModal(false);
+						setSelectedGameForWishlist(null);
+					}}
+				/>
+			</View>
+		);
 }
