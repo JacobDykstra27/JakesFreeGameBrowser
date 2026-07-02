@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from "react";
 import { GameCard } from "../../components/GameCard";
 import { AddToWishlistModal } from "../../components/AddToWishlistModal";
 import { on as onEvent } from "../../APIs/eventBus";
-import { buildGameStoreUrl, getDeals, initData} from "../../APIs/getCheapSharkAPIs";
 import { clearNamespaceCache } from "../../APIs/cacheStorage";
 import { useWishlist } from "../../hooks/useWishlist";
 

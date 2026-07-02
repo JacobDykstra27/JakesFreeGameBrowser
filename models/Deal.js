@@ -28,6 +28,7 @@ class Deal {
         return deal;
     }
     
+    //TODO:some of this functionality has been moved to cheapshark client 
     static fromMultipleGameLookupCSAPI(o)
     {
         const GetCheapestDealWhenMultipleDeals = (o) =>

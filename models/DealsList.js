@@ -2,6 +2,7 @@ import { readCache, writeCache, clearNamespaceCache } from "./cacheStorage";
 import Game from "../models/Game";
 import Deal from "../models/Deal";
 import Store from "../models/Store";
+
 class DealsList{
     
     #deals = [];
@@ -9,12 +10,11 @@ class DealsList{
     #stores = [];
     #sharkClient = new CheapSharkClient();
 
-    #NAMESPACE = "cheapshark";
-    #USE_CASHE = true;
-    #MAX_CASHE_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours
-    #DEALS_CASHE_KEY = "DealsCashe"
-    #GAMES_CASHE_KEY = "GamesCashe"
-    #STORES_CASHE_KEY = "StoresCashe"
+    #USE_CACHE = false; //TODO: finish implementing CacheStorage model
+    #MAX_CACHE_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours
+    #DEALS_CACHE_KEY = "DealsCache"
+    #GAMES_CACHE_KEY = "GamesCache"
+    #STORES_CACHE_KEY = "StoresCache"
 
     getGames() { return this.#games; }
 
@@ -26,28 +26,26 @@ class DealsList{
 
     clearCache() {
         try {
-            await clearNamespaceCache(this.#NAMESPACE);
+            await clearNamespaceCache(this.NAMESPACE);
             console.log("CheapShark cache cleared");
         } catch (err) {
             console.error("Error clearing CheapShark cache:", err);
         }
     }
 
-    //TODO: Fix functions below to use request and client models
-
     initData(options = {}) {
-    // this function trys to get data from cashe. if cashe is empty or outdated, it gets new data from api
+    // this function tries to get data from cache. if cache is empty or outdated, it gets new data from api
 
-        //try to get from cashe
-        if (this.#USE_CASHE) {
+        //try to get from cache
+        if (this.#USE_CACHE) {
             try{
                 //TODO: Check if data is outdated
                 //TODO: Check if data is null or empty
-                this.#deals = this.#getCashed(this.#DEALS_CASHE_KEY);
-                this.#games = this.#getCashed(this.#GAMES_CASHE_KEY);
-                this.#stores = this.#getCashed(this.#STORES_CASHE_KEY);
+                this.#deals = this.#getCached(this.#DEALS_CACHE_KEY);
+                this.#games = this.#getCached(this.#GAMES_CACHE_KEY);
+                this.#stores = this.#getCached(this.#STORES_CACHE_KEY);
             } catch (err) {
-                console.error("Error loading data from cashe:", err);
+                console.error("Error loading data from cache:", err);
             }
         }
 
@@ -68,8 +66,8 @@ class DealsList{
                 return [store.storeID, Store.fromCheapSharkAPI(store)];
             }));
 
-            //save data to cashe
-            if (this.#USE_CASHE) this.#casheData();
+            //save data to cache
+            if (this.#USE_CACHE) this.#cacheData();
 
         } catch (err) {
             console.error("Error loading data from CheapShark:", err);
@@ -116,28 +114,28 @@ class DealsList{
         return [...lowestByGame.values()];
     }
 
-    #casheData(){
-    // cashes current deals, games, and stores
+    #cacheData(){
+    // caches current deals, games, and stores
         try{
-            await writeCache(this.#NAMESPACE, this.#DEALS_CASHE_KEY,  this.#deals,  this.#MAX_CASHE_AGE_MS);
-            await writeCache(this.#NAMESPACE, this.#GAMES_CASHE_KEY,  this.#games,  this.#MAX_CASHE_AGE_MS);
-            await writeCache(this.#NAMESPACE, this.#STORES_CASHE_KEY, this.#stores, this.#MAX_CASHE_AGE_MS);
+            await writeCache(this.NAMESPACE, this.#DEALS_CACHE_KEY,  this.#deals,  this.#MAX_CACHE_AGE_MS);
+            await writeCache(this.NAMESPACE, this.#GAMES_CACHE_KEY,  this.#games,  this.#MAX_CACHE_AGE_MS);
+            await writeCache(this.NAMESPACE, this.#STORES_CACHE_KEY, this.#stores, this.#MAX_CACHE_AGE_MS);
         } catch (err) {
             console.error("Error cashing data:", err);
         }
         
     }
 
-    #getCashed(cacheKey){
-    // return cashed games if any
-        let cached = await readCache(this.#NAMESPACE, cacheKey);
+    #getCached(cacheKey){
+    // return cached games if any
+        let cached = await readCache(this.NAMESPACE, cacheKey);
         if (cached) {
             return cached;
         }
     }
 
     #getStoresDataFromAPI(){
-    // this function fetches stores from ChepsharkAPI
+    // this function fetches stores from CheapsharkAPI
         try {
             const request = new CheapSharkRequest("/stores");
             const response = await this.#sharkClient.send(request);
@@ -154,7 +152,7 @@ class DealsList{
     }
 
     #getDealsDataFromAPI(){
-    // this function fetches deals from ChepsharkAPI
+    // this function fetches deals from CheapsharkAPI
         try {
             const request = new CheapSharkRequest("/deals");
             const response = await this.#sharkClient.send(request);
@@ -170,4 +168,5 @@ class DealsList{
         }
     }
 
-}
+} 
+export default DealsList;
