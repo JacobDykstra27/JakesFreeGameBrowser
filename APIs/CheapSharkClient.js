@@ -1,19 +1,18 @@
-require('dotenv').config();
-
 export class CheapSharkClient{
     static BASE_URL = "https://www.cheapshark.com/api/1.0";
     static RATE_LIMIT_STATUS_CODE = 429;
-    #DEFAULT_CREDENTIALS = process.env.USER_AGENT;
 
     headers = {};
 
-    constructor(credentials = this.#DEFAULT_CREDENTIALS){
+    constructor(credentials){
         this.setCredentials(credentials);
     }
 
     async send(request){
 
-        let fullUrl = this.getUrlWithParams(request);
+        let queryString = request.getQueryString();
+        let hasQueryString = queryString.length > 0 ? true : false;
+        let fullUrl = CheapSharkClient.BASE_URL + request.getEndpoint() + (hasQueryString ? '?' + queryString : '');
         let opts = this.getFetchOptions();
 
         const resp = await fetch(fullUrl, opts);
@@ -27,18 +26,6 @@ export class CheapSharkClient{
 
     getFetchOptions(){
         return { headers: this.headers }
-    }
-
-    getUrlWithParams(request){
-        const urlParams = new URLSearchParams();
-
-        for (const [key, value] of Object.entries(request.getParamsForEndpoint())) {
-            if (value !== null && value !== undefined && value !== "") {
-            urlParams.append(key, value);
-            }
-        }
-
-        return CheapSharkClient.BASE_URL + request.endpoint + '?' + urlParams.toString();
     }
 
     GetRateLimitResponseMessage(retrySeconds){

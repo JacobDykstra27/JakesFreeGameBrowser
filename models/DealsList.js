@@ -33,7 +33,7 @@ class DealsList{
         }
     }
 
-    initData(options = {}) {
+    async initData(options = {}) {
     // this function tries to get data from cache. if cache is empty or outdated, it gets new data from api
 
         //try to get from cache

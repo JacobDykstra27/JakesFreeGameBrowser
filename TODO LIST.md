@@ -1,5 +1,8 @@
 ### TODO:
 - update/ organize cashe api file
-- use models in game deals
-
-### INTERNSHIP KICK OFF NOTES
+- create file / class to own a CheapSharkClient. *DealsList?*
+    ```JS
+    require('dotenv').config();
+    let credentials = process.env.CHEAPSHARK_USER_AGENT;
+    let client = new CheapSharkClient(credentials);
+    ```
