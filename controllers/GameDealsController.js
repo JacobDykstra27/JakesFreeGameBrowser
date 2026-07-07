@@ -4,6 +4,8 @@ import Store from "../models/Store";
 import { CheapSharkClient } from "../APIs/CheapSharkClient"
 import { CheapSharkDealsRequest } from "../APIs/CheapSharkDealsRequest";
 import { CheapSharkStoresRequest } from "../APIs/CheapSharkStoresRequest";
+import { CacheStorage } from "../APIs/CacheStorage";
+
 
 export class GameDealsController{
     

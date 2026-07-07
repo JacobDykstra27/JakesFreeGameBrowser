@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 /**
  * Cache entry structure:
  * {
- *   [namespace]: {
+ *   [APPLICATION_PREFIX]: {
  *     [cacheKey]: {
  *       data: any,
  *       timestamp: number,
@@ -36,7 +36,7 @@ export class CacheStorage {
 	 * @returns {string} Namespaced cache key
 	 */
 	getNamespacedKey(key) {
-		return `${namespace}:${key}`;
+		return `${CacheStorage.APPLICATION_PREFIX}:${key}`;
 	}
 
 	/**

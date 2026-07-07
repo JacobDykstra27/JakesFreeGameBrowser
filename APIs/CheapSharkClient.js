@@ -41,7 +41,7 @@ export class CheapSharkClient{
     }
 
     addCache(path, handler){
-        this.#caches.put(path, handler);
+        this.#caches.set(path, handler);
     }   
 
     setCredentials(credentials){
