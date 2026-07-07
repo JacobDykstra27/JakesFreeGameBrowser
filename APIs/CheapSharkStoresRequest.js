@@ -1,6 +1,6 @@
-export class CheapSharkDealsRequest{
+export class CheapSharkStoresRequest{
 
-    #endpoint = '/stores';
+    #endpoint = 'stores';
     
     constructor(){}
 

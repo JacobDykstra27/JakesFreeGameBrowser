@@ -1,8 +1,4 @@
 ### TODO:
 - update/ organize cashe api file
-- create file / class to own a CheapSharkClient. *DealsList?*
-    ```JS
-    require('dotenv').config();
-    let credentials = process.env.CHEAPSHARK_USER_AGENT;
-    let client = new CheapSharkClient(credentials);
-    ```
+- update game deals to show more the 60 results when user scrolls to the end
+- make writeCache clear existing cache?

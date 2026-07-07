@@ -14,8 +14,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  */
 
 //TODO: Modify functions to fit in an object-oriented model 
+//TODO: update methods to use class attrubutes like namespace and cacheKeys
 export class CacheStorage {
 	#CACHE_STORAGE_KEY = "@JakesFreeGameBrowser:api_cache";
+	static MAX_CACHE_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours
+    static DEALS_CACHE_KEY = "DealsCache"
+    static GAMES_CACHE_KEY = "GamesCache"
+    static STORES_CACHE_KEY = "StoresCache"
+
+	constructor(){};
 
 	/**
 	 * Get cache key for a specific query
@@ -23,7 +30,7 @@ export class CacheStorage {
 	 * @param {string} cacheKey - Unique key for this cache entry
 	 * @returns {string} Namespaced cache key
 	 */
-	getNamespacedKey(namespace, cacheKey) {
+	getNamespacedKey(cacheKey) {
 		return `${namespace}:${cacheKey}`;
 	}
 
@@ -33,7 +40,8 @@ export class CacheStorage {
 	 * @param {string} cacheKey - Cache key
 	 * @returns {Promise<any|null>} Cached data or null if expired/missing
 	 */
-	async readCache(namespace, cacheKey) {
+	async readCache(cacheKey) {
+		//TODO: class should check date of cache and if null before returning data.
 		try {
 			const rawCache = await AsyncStorage.getItem(CACHE_STORAGE_KEY);
 
@@ -79,7 +87,7 @@ export class CacheStorage {
 	 * @param {number} ttlMs - Time to live in milliseconds
 	 * @returns {Promise<void>}
 	 */
-	async writeCache(namespace, cacheKey, data, ttlMs) {
+	async writeCache(cacheKey, data) {
 		try {
 			const rawCache = await AsyncStorage.getItem(CACHE_STORAGE_KEY);
 			const cacheStore = rawCache ? JSON.parse(rawCache) : {};
@@ -105,7 +113,7 @@ export class CacheStorage {
 	 * @param {string} namespace - API namespace to clear
 	 * @returns {Promise<void>}
 	 */
-	async clearNamespaceCache(namespace) {
+	async clearNamespaceCache() {
 		try {
 			const rawCache = await AsyncStorage.getItem(CACHE_STORAGE_KEY);
 			if (!rawCache) return;
@@ -179,7 +187,7 @@ export class CacheStorage {
 	 * @param {string} cacheKey - Cache key
 	 * @returns {Promise<number|null>} Remaining TTL in ms, or null if not found/expired
 	 */
-	async getCacheRemainingTTL(namespace, cacheKey) {
+	async getCacheRemainingTTL(cacheKey) {
 		try {
 			const rawCache = await AsyncStorage.getItem(CACHE_STORAGE_KEY);
 

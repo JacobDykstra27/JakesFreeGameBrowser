@@ -1,6 +1,6 @@
 export class CheapSharkGamesRequest{
 
-    #endpoint = '/games';
+    #endpoint = 'games';
     
     #filters = {}
 

@@ -1,6 +1,6 @@
 export class CheapSharkDealsRequest{
 
-    #endpoint = '/deals';
+    #endpoint = 'deals';
     
     #filters = {};
 

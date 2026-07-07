@@ -1,11 +1,12 @@
 import { StyleSheet, View, Text, TouchableOpacity, Image } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { isDebugMode } from "../APIs/debugMode";
 import { on as onEvent } from "../APIs/eventBus";
 import GameDebugModal from "./GameDebugModal";
-import {getGame} from "../APIs/getCheapSharkAPIs";
+
+import {DealsContext} from "../app/(tabs)/game-deals";
 
 const styles = StyleSheet.create({
 	card: {
@@ -92,10 +93,18 @@ export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
 
 	const [debugEnabled, setDebugEnabled] = useState(isDebugMode());
 	const [debugVisible, setDebugVisible] = useState(false);
-	let game = getGame(deal.gameID);
-	let imageUrl = game.imageUrl;
-	let title = game.title;
+
+	const context =  useContext(DealsContext);
+	const stores = context.stores;
+	const games = context.games;
+
+	let game = games.get(deal.gameID);
+	let imageUrl = game?.imageUrl;
+	let title = game?.title || "foobar title";
 	let genresList = game.genresList;
+
+	let store = stores.get(deal.storeID) || {};
+
 
 
 	useEffect(() => {
@@ -136,7 +145,7 @@ export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
 					{title}
 				</Text>
 
-				{(genresList.length > 0 || deal.store) && (
+				{(genresList.length > 0 || store.name) && (
 					<View style={styles.tagsContainer}>
 						{genresList.map((genre) => (
 							<View key={genre.id} style={styles.tag}>
@@ -144,7 +153,7 @@ export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
 							</View>
 						))}
 
-						{deal.store?.name && (
+						{store?.name && (
 							<View style={styles.tag}>
 								<Text style={styles.tagText}>{deal.store.name}</Text>
 							</View>

@@ -16,10 +16,10 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { GameCard } from "../../components/GameCard";
-import { PriceComparison } from "../../components/PriceComparison";
+//import { PriceComparison } from "../../components/PriceComparison";
 import { useWishlist } from "../../hooks/useWishlist";
 import { wishlistStorage } from "../../hooks/wishlistStorage";
-import {getDealsByIDs} from "../../APIs/getCheapSharkAPIs"; 
+//import {getDealsByIDs} from "../../APIs/getCheapSharkAPIs"; 
 import Wishlist from "../../models/Wishlist";
 
 const styles = StyleSheet.create({
