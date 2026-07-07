@@ -16,32 +16,38 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 //TODO: Modify functions to fit in an object-oriented model 
 //TODO: update methods to use class attrubutes like namespace and cacheKeys
 export class CacheStorage {
-	#CACHE_STORAGE_KEY = "@JakesFreeGameBrowser:api_cache";
+	static APPLICATION_PREFIX = "";
 	static MAX_CACHE_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours
-    static DEALS_CACHE_KEY = "DealsCache"
-    static GAMES_CACHE_KEY = "GamesCache"
-    static STORES_CACHE_KEY = "StoresCache"
 
-	constructor(){};
+	prefix;
+
+	static setApplicationPrefix(prefix){
+		CacheStorage.APPLICATION_PREFIX = prefix;
+	}
+
+	constructor(prefix){
+		this.prefix = prefix;
+	};
 
 	/**
 	 * Get cache key for a specific query
 	 * @param {string} namespace - API namespace (e.g., 'gamerpower', 'cheapshark')
-	 * @param {string} cacheKey - Unique key for this cache entry
+	 * @param {string} key - Unique key for this cache entry
 	 * @returns {string} Namespaced cache key
 	 */
-	getNamespacedKey(cacheKey) {
-		return `${namespace}:${cacheKey}`;
+	getNamespacedKey(key) {
+		return `${namespace}:${key}`;
 	}
 
 	/**
 	 * Read from cache
 	 * @param {string} namespace - API namespace
-	 * @param {string} cacheKey - Cache key
+	 * @param {string} key - Cache key
 	 * @returns {Promise<any|null>} Cached data or null if expired/missing
 	 */
-	async readCache(cacheKey) {
+	async read(key) {
 		//TODO: class should check date of cache and if null before returning data.
+		let fullKey = CacheStorage.APPLICATION_PREFIX + "." + this.prefix + "." + key;
 		try {
 			const rawCache = await AsyncStorage.getItem(CACHE_STORAGE_KEY);
 
@@ -51,17 +57,17 @@ export class CacheStorage {
 
 			const cacheStore = JSON.parse(rawCache);
 
-			if (!cacheStore[namespace] || !cacheStore[namespace][cacheKey]) {
+			if (!cacheStore[namespace] || !cacheStore[namespace][key]) {
 				return null;
 			}
 
-			const entry = cacheStore[namespace][cacheKey];
+			const entry = cacheStore[namespace][key];
 			const { data, timestamp, ttlMs } = entry;
 			const isExpired = Date.now() - timestamp > ttlMs;
 
 			if (isExpired) {
 				// Remove expired entry
-				delete cacheStore[namespace][cacheKey];
+				delete cacheStore[namespace][key];
 
 				// Clean up empty namespaces
 				if (Object.keys(cacheStore[namespace]).length === 0) {
@@ -74,7 +80,7 @@ export class CacheStorage {
 
 			return data;
 		} catch (err) {
-			console.error(`Error reading cache for ${namespace}:${cacheKey}:`, err);
+			console.error(`Error reading cache for ${namespace}:${key}:`, err);
 			return null;
 		}
 	}
@@ -82,12 +88,13 @@ export class CacheStorage {
 	/**
 	 * Write to cache
 	 * @param {string} namespace - API namespace
-	 * @param {string} cacheKey - Cache key
+	 * @param {string} key - Cache key
 	 * @param {any} data - Data to cache
 	 * @param {number} ttlMs - Time to live in milliseconds
 	 * @returns {Promise<void>}
 	 */
-	async writeCache(cacheKey, data) {
+	async write(key, data) {
+		let fullKey = CacheStorage.APPLICATION_PREFIX + "." + this.prefix + "." + key;
 		try {
 			const rawCache = await AsyncStorage.getItem(CACHE_STORAGE_KEY);
 			const cacheStore = rawCache ? JSON.parse(rawCache) : {};
@@ -96,7 +103,7 @@ export class CacheStorage {
 				cacheStore[namespace] = {};
 			}
 
-			cacheStore[namespace][cacheKey] = {
+			cacheStore[namespace][key] = {
 				data,
 				timestamp: Date.now(),
 				ttlMs,
@@ -104,7 +111,7 @@ export class CacheStorage {
 
 			await AsyncStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cacheStore));
 		} catch (err) {
-			console.error(`Error writing cache for ${namespace}:${cacheKey}:`, err);
+			console.error(`Error writing cache for ${namespace}:${key}:`, err);
 		}
 	}
 
@@ -113,7 +120,7 @@ export class CacheStorage {
 	 * @param {string} namespace - API namespace to clear
 	 * @returns {Promise<void>}
 	 */
-	async clearNamespaceCache() {
+	async clearNamespace() {
 		try {
 			const rawCache = await AsyncStorage.getItem(CACHE_STORAGE_KEY);
 			if (!rawCache) return;
@@ -134,7 +141,7 @@ export class CacheStorage {
 	 * Clear all cached data
 	 * @returns {Promise<void>}
 	 */
-	async clearAllCache() {
+	async clearAll() {
 		try {
 			await AsyncStorage.removeItem(CACHE_STORAGE_KEY);
 			console.log("All API cache cleared");
@@ -147,7 +154,7 @@ export class CacheStorage {
 	 * Get cache statistics
 	 * @returns {Promise<object>} Cache stats with size, entries per namespace, etc.
 	 */
-	async getCacheStats() {
+	async getStats() {
 		try {
 			const rawCache = await AsyncStorage.getItem(CACHE_STORAGE_KEY);
 			if (!rawCache) {
@@ -184,10 +191,10 @@ export class CacheStorage {
 	/**
 	 * Get remaining TTL for a cached item
 	 * @param {string} namespace - API namespace
-	 * @param {string} cacheKey - Cache key
+	 * @param {string} key - Cache key
 	 * @returns {Promise<number|null>} Remaining TTL in ms, or null if not found/expired
 	 */
-	async getCacheRemainingTTL(cacheKey) {
+	async getTimeRemaining(key) {
 		try {
 			const rawCache = await AsyncStorage.getItem(CACHE_STORAGE_KEY);
 
@@ -197,18 +204,18 @@ export class CacheStorage {
 
 			const cacheStore = JSON.parse(rawCache);
 
-			if (!cacheStore[namespace] || !cacheStore[namespace][cacheKey]) {
+			if (!cacheStore[namespace] || !cacheStore[namespace][key]) {
 				return null;
 			}
 
-			const entry = cacheStore[namespace][cacheKey];
+			const entry = cacheStore[namespace][key];
 			const { timestamp, ttlMs } = entry;
 			const elapsed = Date.now() - timestamp;
-			const remaining = ttlMs - elapsed;
+			const remaining = CacheStorage.MAX_CACHE_AGE_MS - elapsed;
 
 			return remaining > 0 ? remaining : null;
 		} catch (err) {
-			console.error(`Error getting TTL for ${namespace}:${cacheKey}:`, err);
+			console.error(`Error getting TTL for ${namespace}:${key}:`, err);
 			return null;
 		}
 	}

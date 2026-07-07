@@ -11,10 +11,23 @@ export class GameDealsController{
     #games = [];
     #stores = [];
 
-    #credentials = process.env.EXPO_PUBLIC_CHEAPSHARK_USER_AGENT;
-    #sharkClient = new CheapSharkClient(this.#credentials);
+    #credentials;
+    #sharkClient;
     
-    constructor(){}
+    constructor(){
+        this.#credentials = process.env.EXPO_PUBLIC_CHEAPSHARK_USER_AGENT;
+        this.#sharkClient = new CheapSharkClient(this.#credentials);
+
+        CacheStorage.setApplicationPrefix("@JakesFreeGameBrowser:api_cache");
+
+        let dealsCache = new CacheStorage("deals");
+        let gamesCache = new CacheStorage("games");
+        let storesCache = new CacheStorage("stores");
+
+        this.#sharkClient.addCache("deals", dealsCache);
+        this.#sharkClient.addCache("games", gamesCache);
+        this.#sharkClient.addCache("stores",storesCache);
+    }
 
     getGames() { return this.#games; }
 
@@ -25,21 +38,11 @@ export class GameDealsController{
     getStores() { return this.#stores; }
 
     clearCache() {
-        this.#cache.clearCache();
+        this.sharkClient.clearCache();
     }
 
     //TODO: add optional params for filters
     async initData(options = {}) {
-    // this function tries to get data from cache. if cache is empty or outdated, it gets new data from api
-
-        //init cache classes
-        let dealsCache = new CacheStorage("Deals");
-        let gamesCache = new CacheStorage("Games");
-        let storesCache = new CacheStorage("Stores");
-
-        this.#sharkClient.addCache(dealsCache, "/deals");
-        
-
         try{
             const dealsRequest = new CheapSharkDealsRequest(options);
             const storesRequest = new CheapSharkStoresRequest();
