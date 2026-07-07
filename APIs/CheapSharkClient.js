@@ -4,7 +4,9 @@ export class CheapSharkClient{
     static BASE_URL = "https://www.cheapshark.com/api/1.0/";
     static RATE_LIMIT_STATUS_CODE = 429;
 
-    #USE_CACHE = false; 
+    #USE_CACHE = true; 
+    #WRITE_CACHE = true;
+    #READ_CACHE = true;
     #caches = new Map();
 
     headers = {};
@@ -14,27 +16,33 @@ export class CheapSharkClient{
     }
 
     async send(request){
-        let result = {};
+        let result;
+        let cached;
         let endpoint = request.getEndpoint();
 
         let cache = this.#caches.get(endpoint);
-        if(this.#USE_CACHE && cache != null){
-            result = cache.read(endpoint);
+        if(this.#USE_CACHE && this.#READ_CACHE && cache != null){
+            cached = cache.read(endpoint);
         }
 
-        let fullUrl = CheapSharkClient.BASE_URL + endpoint
+        if (!cached){
+            let fullUrl = CheapSharkClient.BASE_URL + endpoint
 
-        if (request.getQueryString().length > 0){
-            fullUrl += "?" + request.getQueryString();
+            if (request.getQueryString().length > 0){
+                fullUrl += "?" + request.getQueryString();
+            }
+
+            let opts = this.getFetchOptions();
+
+            let response = await fetch(fullUrl, opts);
+            result = await response.text();
+
+            if(this.#USE_CACHE && this.#WRITE_CACHE && cache != null){
+                cache.write(endpoint, result);
+            }
         }
-
-        let opts = this.getFetchOptions();
-
-        result = await fetch(fullUrl, opts)
-                        .then((response) => response.json());
-        
-        if(this.#USE_CACHE && cache != null){
-            cache.write(endpoint, result);
+        else {
+            result = cached;
         }
 
         return result;

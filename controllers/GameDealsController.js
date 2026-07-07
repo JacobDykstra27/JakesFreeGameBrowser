@@ -23,12 +23,10 @@ export class GameDealsController{
         CacheStorage.setApplicationPrefix("@JakesFreeGameBrowser:api_cache");
 
         let dealsCache = new CacheStorage("deals");
-        let gamesCache = new CacheStorage("games");
         let storesCache = new CacheStorage("stores");
 
         this.#sharkClient.addCache("deals", dealsCache);
-        this.#sharkClient.addCache("games", gamesCache);
-        this.#sharkClient.addCache("stores",storesCache);
+        this.#sharkClient.addCache("stores", storesCache);
     }
 
     getGames() { return this.#games; }
@@ -49,8 +47,8 @@ export class GameDealsController{
             const dealsRequest = new CheapSharkDealsRequest(options);
             const storesRequest = new CheapSharkStoresRequest();
 
-            const dealsResponse = await this.#sharkClient.send(dealsRequest);
-            const storesResponse = await this.#sharkClient.send(storesRequest);
+            const dealsResponse = await this.#sharkClient.send(dealsRequest).then((text) => JSON.parse(text));
+            const storesResponse = await this.#sharkClient.send(storesRequest).then((text) => JSON.parse(text));
             
             this.#games = new Map(dealsResponse.map((game) => {
                 return [game.gameID, Game.fromCheapSharkAPI(game)];
