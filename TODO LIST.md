@@ -1,4 +1,5 @@
-### TODO:
-- update/ organize cashe api file
+# TODO
+
+- add games endpoint support for client and cache
 - update game deals to show more the 60 results when user scrolls to the end
-- make writeCache clear existing cache?
+- make cache check expiration date

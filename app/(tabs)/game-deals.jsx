@@ -1,11 +1,13 @@
 //#region imports
 import { StyleSheet, View, FlatList, ActivityIndicator, Text } from "react-native";
-import { useState, useEffect, useCallback, createContext } from "react";
+import { useState, useEffect, useCallback, useContext } from "react";
 import { GameCard } from "../../components/GameCard";
 import { AddToWishlistModal } from "../../components/AddToWishlistModal";
 import { useWishlist } from "../../hooks/useWishlist";
 import { on as onEvent } from "../../APIs/eventBus";
 import { GameDealsController } from "../../controllers/GameDealsController";
+import { CheapSharkDealsRequest } from "../../APIs/CheapSharkDealsRequest";
+import { GameCardContext } from "./_layout";
 //#endregion
 
 const styles = StyleSheet.create({
@@ -123,8 +125,6 @@ const handleRefresh = async () => {
 };
 //#endregion
 
-export const DealsContext = createContext();
-
 export default function GameDealsScreen() {
 	const [deals, setDeals] = useState([]);
 	const [stores, setStores] = useState([]);
@@ -134,34 +134,29 @@ export default function GameDealsScreen() {
 	const [showWishlistModal, setShowWishlistModal] = useState(false);
 	const [selectedGameForWishlist, setSelectedGameForWishlist] = useState(null);
 	const { wishlists, addGameToWishlist, createWishlist } = useWishlist();
+	//const { contextObj, setContextObj } = useContext(GameCardContext);
+	const { stateee } = useContext(GameCardContext);
 
 	const DATA_CONTROLLER = new GameDealsController();
 
 	const loadGameDeals = useCallback(async () => {
-		await DATA_CONTROLLER.initData({
-			onSale: true,
-			sortBy: "DealRating",
-			desc: true,
-			pageSize: 20,
-		});
-		setDeals(DATA_CONTROLLER.getDeals());
-		setStores(DATA_CONTROLLER.getStores());
-		setGames(DATA_CONTROLLER.getGames());
-		setLoading(false);
-	}, []);
-
-	/*
-	const loadGameDeals = useCallback(async () => {
 		try {
-			await DATA_CONTROLLER.initData({
-				onSale: true,
-				sortBy: "DealRating",
-				desc: true,
-				pageSize: 20,
-			});
+			let sharkRequest = new CheapSharkDealsRequest();
+			sharkRequest.onlySales();
+			sharkRequest.sortBy("DealRating");
+			sharkRequest.orderDesc();
+			sharkRequest.setPageSize(60);
+
+			DATA_CONTROLLER.setRequest(sharkRequest);
+			await DATA_CONTROLLER.initData();
+
 			setDeals(DATA_CONTROLLER.getDeals());
 			setStores(DATA_CONTROLLER.getStores());
 			setGames(DATA_CONTROLLER.getGames());
+
+			setContextObj({games, stores});
+		
+
 		} catch (e) {
 			console.error("Error loading game deals:", e);
 			setError(e.message || "Failed to load game deals");
@@ -169,7 +164,7 @@ export default function GameDealsScreen() {
 			setLoading(false);
 		}
 	}, []);
-	*/
+
 	useEffect(() => {
 		loadGameDeals();
 	}, []);
@@ -213,27 +208,25 @@ export default function GameDealsScreen() {
 
 	else return (
 			<View style={styles.container}>
-				<DealsContext.Provider value={{games, stores}}>
-					<FlatList
-						data={[...deals]}
-						renderItem={({ item }) => (
-							<GameCard deal={item[1]} onAddToWishlist={handleAddToWishlist} />
-						)}
-						keyExtractor={(item) => item[0]}
-						contentContainerStyle={styles.listContent}
-						scrollIndicatorInsets={{ right: 1 }}
-					/>
-					<AddToWishlistModal
-						visible={showWishlistModal}
-						wishlists={wishlists}
-						onSelectWishlist={handleSelectWishlist}
-						onCreateNew={handleCreateNewWishlist}
-						onCancel={() => {
-							setShowWishlistModal(false);
-							setSelectedGameForWishlist(null);
-						}}
-					/>
-				</DealsContext.Provider>
+				<FlatList
+					data={[...deals]}
+					renderItem={({ item }) => (
+						<GameCard deal={item[1]} onAddToWishlist={handleAddToWishlist} />
+					)}
+					keyExtractor={(item) => item[0]}
+					contentContainerStyle={styles.listContent}
+					scrollIndicatorInsets={{ right: 1 }}
+				/>
+				<AddToWishlistModal
+					visible={showWishlistModal}
+					wishlists={wishlists}
+					onSelectWishlist={handleSelectWishlist}
+					onCreateNew={handleCreateNewWishlist}
+					onCancel={() => {
+						setShowWishlistModal(false);
+						setSelectedGameForWishlist(null);
+					}}
+				/>
 			</View>
 		);
 }

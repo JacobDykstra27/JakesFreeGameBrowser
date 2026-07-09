@@ -5,8 +5,8 @@ import { useState, useEffect, useContext } from "react";
 import { isDebugMode } from "../APIs/debugMode";
 import { on as onEvent } from "../APIs/eventBus";
 import GameDebugModal from "./GameDebugModal";
+import { GameCardContext } from "../app/(tabs)/_layout";
 
-import {DealsContext} from "../app/(tabs)/game-deals";
 
 const styles = StyleSheet.create({
 	card: {
@@ -94,9 +94,9 @@ export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
 	const [debugEnabled, setDebugEnabled] = useState(isDebugMode());
 	const [debugVisible, setDebugVisible] = useState(false);
 
-	const context =  useContext(DealsContext);
-	const stores = context.stores;
-	const games = context.games;
+	const {contextObj, setContextObj} =  useContext(GameCardContext);
+	const stores = contextObj.stores;
+	const games = contextObj.games;
 
 	let game = games.get(deal.gameID);
 	let imageUrl = game?.imageUrl;

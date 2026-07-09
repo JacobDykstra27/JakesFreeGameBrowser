@@ -11,16 +11,26 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  * }
  */
 
-//TODO: Modify functions to fit in an object-oriented model 
-//TODO: update methods to use class attrubutes like namespace and cacheKeys
 export class CacheStorage {
 	static APPLICATION_PREFIX = "";
 	static MAX_CACHE_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 	prefix;
 
+	/**
+	 * Set application cache key prefix
+	 * @param {string} prefix - App name
+	 */
 	static setApplicationPrefix(prefix){
 		CacheStorage.APPLICATION_PREFIX = prefix;
+	}
+
+	/**
+	 * sets time for cache to be outdated
+	 * @param {string} timeMS - time until expiry in Miliseconds
+	 */
+	static setMaxCacheAge(timeMS){
+		CacheStorage.MAX_CACHE_AGE_MS = timeMS;
 	}
 
 	constructor(prefix){

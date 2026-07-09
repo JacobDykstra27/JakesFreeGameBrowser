@@ -6,7 +6,6 @@ import { CheapSharkDealsRequest } from "../APIs/CheapSharkDealsRequest";
 import { CheapSharkStoresRequest } from "../APIs/CheapSharkStoresRequest";
 import { CacheStorage } from "../APIs/CacheStorage";
 
-
 export class GameDealsController{
     
     #deals = [];
@@ -15,12 +14,15 @@ export class GameDealsController{
 
     #credentials;
     #sharkClient;
+    #sharkRequest;
     
     constructor(){
         this.#credentials = process.env.EXPO_PUBLIC_CHEAPSHARK_USER_AGENT;
         this.#sharkClient = new CheapSharkClient(this.#credentials);
+        this.#sharkRequest = new CheapSharkDealsRequest();
 
         CacheStorage.setApplicationPrefix("@JakesFreeGameBrowser:api_cache");
+        CacheStorage.setMaxCacheAge(6 * 60 * 60 * 1000); // 6 hours
 
         let dealsCache = new CacheStorage("deals");
         let storesCache = new CacheStorage("stores");
@@ -37,17 +39,17 @@ export class GameDealsController{
 
     getStores() { return this.#stores; }
 
+    setRequest(request){ this.#sharkRequest = request; }
+
     clearCache() {
         this.sharkClient.clearCache();
     }
 
-    //TODO: add optional params for filters
-    async initData(options = {}) {
+    async initData() {
         try{
-            const dealsRequest = new CheapSharkDealsRequest(options);
             const storesRequest = new CheapSharkStoresRequest();
 
-            const dealsResponse = await this.#sharkClient.send(dealsRequest).then((text) => JSON.parse(text));
+            const dealsResponse = await this.#sharkClient.send(this.#sharkRequest).then((text) => JSON.parse(text));
             const storesResponse = await this.#sharkClient.send(storesRequest).then((text) => JSON.parse(text));
             
             this.#games = new Map(dealsResponse.map((game) => {
@@ -106,4 +108,5 @@ export class GameDealsController{
 
         return [...lowestByGame.values()];
     }
+
 } 

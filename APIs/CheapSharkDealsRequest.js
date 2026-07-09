@@ -6,8 +6,8 @@ export class CheapSharkDealsRequest{
 
     // #region constants
     static SORT_BY_VALUES = ["DealRating", "Title", "Savings", "Price", "Metacritic", "Reviews", "ReviewCount", "Release", "Store", "Recent"];
-    static AMOUNT_OF_DEALS_MIN = 20;
-    static AMOUNT_OF_DEALS_MAX = 60;
+    static PAGE_SIZE_MIN = 20;
+    static PAGE_SIZE_MAX = 60;
     static SORT_DESCENDING = 1;
     static SORT_ASCENDING = 0;
     static PRICE_FILTER_MAX = 50;
@@ -16,8 +16,9 @@ export class CheapSharkDealsRequest{
     static DEAL_AGE_MIN = 1;
     // #endregion
 
-    constructor(){
-        this.onlySales()
+    constructor(paramsObj = {}){
+        if(paramsObj = {}) this.onlySales();
+        else this.setFilters(paramsObj)
     }
 
     static newFromParams(paramsObj){
@@ -71,26 +72,22 @@ export class CheapSharkDealsRequest{
         this.#filters.pageNumber = pageNumber;
     }
 
-    setAmountOfDeals(pageSize){
-        if(pageSize < PAGE_SIZE_MIN || pageSize > PAGE_SIZE_MAX){
+    setPageSize(pageSize){
+        if(pageSize < CheapSharkDealsRequest.PAGE_SIZE_MIN || pageSize > CheapSharkDealsRequest.PAGE_SIZE_MAX){
             throw new Error(`pageSize must be between ${CheapSharkDealsRequest.AMOUNT_OF_DEALS_MIN} and ${CheapSharkDealsRequest.AMOUNT_OF_DEALS_MAX}`);
         }
         this.#filters.pageSize = pageSize;
     }
     
-    setSortBy(sortBy){
+    sortBy(sortBy){
         if (!CheapSharkDealsRequest.SORT_BY_VALUES.includes(sortBy)) {
             throw new Error("Invalid sortBy value");
         }
         this.#filters.sortBy = sortBy;
     }
 
-    setSortDirection(direction){
-    // direction is 0 for ascending, 1 for descending
-        if (direction !== CheapSharkDealsRequest.SORT_DESCENDING && direction !== CheapSharkDealsRequest.SORT_ASCENDING) {
-            throw new Error("desc must be 0 (ascending) or 1 (descending)");
-        }
-        this.#filters.desc = direction;
+    orderDesc(flag = true){
+        this.#filters["desc"] = flag ? 1 : 0;
     }
 
     setLowerPrice(lowerPrice){
