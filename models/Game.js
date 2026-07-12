@@ -4,7 +4,7 @@ class Game{
     title;
     imageUrl;
     steamAppId;
-    genresList = [];
+    genreList = [];
 
     constructor(t) {
         this.title = t;
@@ -26,18 +26,18 @@ class Game{
     }
 
     addGenre(genre) {
-        if (this.genresList.includes(genre))
+        if (this.genreList.includes(genre))
             return false;
         else{
-            this.genresList.push(genre);
+            this.genreList.push(genre);
             return true;
         }
     }
 
     removeGenre(Genre) {
-        if (this.genresList.includes(genre)){
-            index = this.genresList.indexOf(genre);
-            this.genresList.pop(index);
+        if (this.genreList.includes(genre)){
+            index = this.genreList.indexOf(genre);
+            this.genreList.pop(index);
             return true;
         }
         else

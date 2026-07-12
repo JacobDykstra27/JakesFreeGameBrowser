@@ -1,14 +1,13 @@
 //#region imports
 import { StyleSheet, View, FlatList, ActivityIndicator, Text } from "react-native";
-import { useState, useEffect, useCallback, useContext } from "react";
+import { useState, useEffect, useCallback, useContext, useRef } from "react";
 import { GameCard } from "../../components/GameCard";
 import { AddToWishlistModal } from "../../components/AddToWishlistModal";
 import { useWishlist } from "../../hooks/useWishlist";
 import { on as onEvent } from "../../APIs/eventBus";
 import { GameDealsController } from "../../controllers/GameDealsController";
 import { CheapSharkDealsRequest } from "../../APIs/CheapSharkDealsRequest";
-import { GameCardContext } from "./_layout";
-//#endregion
+import { GameCardContext } from "../../context/GameCardContext";//#endregion
 
 const styles = StyleSheet.create({
 	container: {
@@ -126,37 +125,43 @@ const handleRefresh = async () => {
 //#endregion
 
 export default function GameDealsScreen() {
-	const [deals, setDeals] = useState([]);
-	const [stores, setStores] = useState([]);
-	const [games, setGames] = useState([]);
+	const [deals, setDeals] = useState(new Map());
+	const [stores, setStores] = useState(new Map());
+	const [games, setGames] = useState(new Map());
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const [showWishlistModal, setShowWishlistModal] = useState(false);
 	const [selectedGameForWishlist, setSelectedGameForWishlist] = useState(null);
 	const { wishlists, addGameToWishlist, createWishlist } = useWishlist();
-	//const { contextObj, setContextObj } = useContext(GameCardContext);
-	const { stateee } = useContext(GameCardContext);
+	const {contextObj, setContextObj} = useContext(GameCardContext);
 
-	const DATA_CONTROLLER = new GameDealsController();
+	const DATA_CONTROLLER = useRef(new GameDealsController()).current;
 
 	const loadGameDeals = useCallback(async () => {
 		try {
-			let sharkRequest = new CheapSharkDealsRequest();
+			const sharkRequest = new CheapSharkDealsRequest();
+
 			sharkRequest.onlySales();
 			sharkRequest.sortBy("DealRating");
 			sharkRequest.orderDesc();
 			sharkRequest.setPageSize(60);
 
 			DATA_CONTROLLER.setRequest(sharkRequest);
+
 			await DATA_CONTROLLER.initData();
 
-			setDeals(DATA_CONTROLLER.getDeals());
-			setStores(DATA_CONTROLLER.getStores());
-			setGames(DATA_CONTROLLER.getGames());
+			const loadedStores = new Map(DATA_CONTROLLER.getStores());
+			const loadedDeals = new Map(DATA_CONTROLLER.getDeals());
+			const loadedGames = new Map(DATA_CONTROLLER.getGames());
 
-			setContextObj({games, stores});
-		
+			setStores(loadedStores);
+			setDeals(loadedDeals);
+			setGames(loadedGames);
 
+			setContextObj({
+				stores: loadedStores,
+				games: loadedGames,
+			});
 		} catch (e) {
 			console.error("Error loading game deals:", e);
 			setError(e.message || "Failed to load game deals");
@@ -167,7 +172,7 @@ export default function GameDealsScreen() {
 
 	useEffect(() => {
 		loadGameDeals();
-	}, []);
+	}, [DATA_CONTROLLER, setContextObj]);
 
 	// Subscribe to header refresh event
 	useEffect(() => {
@@ -176,8 +181,6 @@ export default function GameDealsScreen() {
 		});
 		return () => unsub && unsub();
 	}, [loadGameDeals]);
-
-	console.log([...deals]);
 
 	if (loading) {
 		return (
@@ -196,7 +199,7 @@ export default function GameDealsScreen() {
 		);
 	}
 
-	else if (deals.length === 0) {
+	else if (deals.size === 0) {
 		return (
 			<View style={styles.emptyContainer}>
 				<Text style={styles.emptyText}>No game deals available right now</Text>
@@ -207,26 +210,26 @@ export default function GameDealsScreen() {
 	// [ [mapped id], {object} ]
 
 	else return (
-			<View style={styles.container}>
-				<FlatList
-					data={[...deals]}
-					renderItem={({ item }) => (
-						<GameCard deal={item[1]} onAddToWishlist={handleAddToWishlist} />
-					)}
-					keyExtractor={(item) => item[0]}
-					contentContainerStyle={styles.listContent}
-					scrollIndicatorInsets={{ right: 1 }}
-				/>
-				<AddToWishlistModal
-					visible={showWishlistModal}
-					wishlists={wishlists}
-					onSelectWishlist={handleSelectWishlist}
-					onCreateNew={handleCreateNewWishlist}
-					onCancel={() => {
-						setShowWishlistModal(false);
-						setSelectedGameForWishlist(null);
-					}}
-				/>
-			</View>
-		);
+		<View style={styles.container}>
+			<FlatList
+				data={[...deals]}
+				renderItem={({ item }) => (
+					<GameCard deal={item[1]} onAddToWishlist={handleAddToWishlist} />
+				)}
+				keyExtractor={(item) => item[0]}
+				contentContainerStyle={styles.listContent}
+				scrollIndicatorInsets={{ right: 1 }}
+			/>
+			<AddToWishlistModal
+				visible={showWishlistModal}
+				wishlists={wishlists}
+				onSelectWishlist={handleSelectWishlist}
+				onCreateNew={handleCreateNewWishlist}
+				onCancel={() => {
+					setShowWishlistModal(false);
+					setSelectedGameForWishlist(null);
+				}}
+			/>
+		</View>
+	);
 }

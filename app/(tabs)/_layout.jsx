@@ -2,83 +2,76 @@ import React from "react";
 import { Tabs } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { RefreshMenu } from "../../components/RefreshMenu";
-import { createContext, useState } from "react";
-
-export const GameCardContext = createContext({});
-
-const ContextProvider = ({children}) => {
-	//const [contextObj, setContextObj] = useState({});
-	const gameCardState = useState({});
-	
-	return (
-		<GameCardContext.Provider value={gameCardState}>
-			{children}
-		</GameCardContext.Provider>
-	);
-};
+import { useState } from "react";
+import { GameCardContext } from "../../context/GameCardContext";
 
 export default function TabsLayout() {
+	const [contextObj, setContextObj] = useState({
+		games: new Map(),
+		stores: new Map(),
+	});
+
 	return (
-		<Tabs
-			screenOptions={{
-				tabBarActiveTintColor: "#007AFF",
-				tabBarInactiveTintColor: "#666",
-				tabBarStyle: {
-					backgroundColor: "#1a1a1a",
-					borderTopColor: "#333",
-					paddingBottom: 8,
-				},
-				headerShown: true,
-				headerStyle: {
-					backgroundColor: "#1a1a1a",
-					borderBottomColor: "#333",
-				},
-				headerTintColor: "#fff",
-				headerTitleStyle: {
-					fontWeight: "bold",
-					fontSize: 18,
-				},
-			}}
-		>
-			<ContextProvider>
-				<Tabs.Screen
-					name="free-games"
-					options={{
-						title: "Free Games",
-						tabBarLabel: "Free Games",
-						tabBarIcon: ({ color, size }) => (
-							<MaterialCommunityIcons name="gift" color={color} size={size} />
-						),
-						headerTitle: "Free Games",
-						headerRight: () => <RefreshMenu eventName="refresh_free_games" />,
-					}}
-				/>
+		<GameCardContext.Provider value={{contextObj, setContextObj}}>
+			<Tabs
+				screenOptions={{
+					tabBarActiveTintColor: "#007AFF",
+					tabBarInactiveTintColor: "#666",
+					tabBarStyle: {
+						backgroundColor: "#1a1a1a",
+						borderTopColor: "#333",
+						paddingBottom: 8,
+					},
+					headerShown: true,
+					headerStyle: {
+						backgroundColor: "#1a1a1a",
+						borderBottomColor: "#333",
+					},
+					headerTintColor: "#fff",
+					headerTitleStyle: {
+						fontWeight: "bold",
+						fontSize: 18,
+					},
+				}}
+			>
+					<Tabs.Screen
+						name="free-games"
+						options={{
+							title: "Free Games",
+							tabBarLabel: "Free Games",
+							tabBarIcon: ({ color, size }) => (
+								<MaterialCommunityIcons name="gift" color={color} size={size} />
+							),
+							headerTitle: "Free Games",
+							headerRight: () => <RefreshMenu eventName="refresh_free_games" />,
+						}}
+					/>
 
-				<Tabs.Screen
-					name="game-deals"
-					options={{
-						title: "Game Deals",
-						tabBarLabel: "Deals",
-						tabBarIcon: ({ color, size }) => (
-							<MaterialCommunityIcons name="tag-multiple" color={color} size={size} />
-						),
-						headerTitle: "Game Deals",
-						headerRight: () => <RefreshMenu eventName="refresh_game_deals" />,
-					}}
-				/>
+					<Tabs.Screen
+						name="game-deals"
+						options={{
+							title: "Game Deals",
+							tabBarLabel: "Deals",
+							tabBarIcon: ({ color, size }) => (
+								<MaterialCommunityIcons name="tag-multiple" color={color} size={size} />
+							),
+							headerTitle: "Game Deals",
+							headerRight: () => <RefreshMenu eventName="refresh_game_deals" />,
+						}}
+					/>
 
-				<Tabs.Screen
-					name="wishlists"
-					options={{
-						title: "My Wishlists",
-						tabBarLabel: "Wishlists",
-						tabBarIcon: ({ color, size }) => (
-							<MaterialCommunityIcons name="bookmark" color={color} size={size} />
-						),
-						headerTitle: "My Wishlists",
-					}}
-				/>
-			</ContextProvider>
-		</Tabs>
+					<Tabs.Screen
+						name="wishlists"
+						options={{
+							title: "My Wishlists",
+							tabBarLabel: "Wishlists",
+							tabBarIcon: ({ color, size }) => (
+								<MaterialCommunityIcons name="bookmark" color={color} size={size} />
+							),
+							headerTitle: "My Wishlists",
+						}}
+					/>
+			</Tabs>
+		</GameCardContext.Provider>
 	);
 }

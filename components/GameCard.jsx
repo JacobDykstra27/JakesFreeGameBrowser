@@ -5,7 +5,7 @@ import { useState, useEffect, useContext } from "react";
 import { isDebugMode } from "../APIs/debugMode";
 import { on as onEvent } from "../APIs/eventBus";
 import GameDebugModal from "./GameDebugModal";
-import { GameCardContext } from "../app/(tabs)/_layout";
+import { GameCardContext } from "../context/GameCardContext";
 
 
 const styles = StyleSheet.create({
@@ -94,18 +94,15 @@ export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
 	const [debugEnabled, setDebugEnabled] = useState(isDebugMode());
 	const [debugVisible, setDebugVisible] = useState(false);
 
-	const {contextObj, setContextObj} =  useContext(GameCardContext);
+	const {contextObj} = useContext(GameCardContext);
 	const stores = contextObj.stores;
 	const games = contextObj.games;
 
 	let game = games.get(deal.gameID);
 	let imageUrl = game?.imageUrl;
 	let title = game?.title || "foobar title";
-	let genresList = game.genresList;
-
+	let genreList = game?.genresList || [];
 	let store = stores.get(deal.storeID) || {};
-
-
 
 	useEffect(() => {
 		const unsub = onEvent("debug_mode_changed", (val) => {
@@ -145,9 +142,9 @@ export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
 					{title}
 				</Text>
 
-				{(genresList.length > 0 || store.name) && (
+				{(genreList.length > 0 || store.name) && (
 					<View style={styles.tagsContainer}>
-						{genresList.map((genre) => (
+						{genreList.map((genre) => (
 							<View key={genre.id} style={styles.tag}>
 								<Text style={styles.tagText}>{genre.name}</Text>
 							</View>
@@ -155,7 +152,7 @@ export function GameCard({ deal, onAddToWishlist, showPrice = true }) {
 
 						{store?.name && (
 							<View style={styles.tag}>
-								<Text style={styles.tagText}>{deal.store.name}</Text>
+								<Text style={styles.tagText}>{store.name}</Text>
 							</View>
 						)}
 					</View>

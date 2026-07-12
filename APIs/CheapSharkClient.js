@@ -4,7 +4,7 @@ export class CheapSharkClient{
     static BASE_URL = "https://www.cheapshark.com/api/1.0/";
     static RATE_LIMIT_STATUS_CODE = 429;
 
-    #USE_CACHE = true; 
+    #USE_CACHE = false; 
     #WRITE_CACHE = true;
     #READ_CACHE = true;
     #caches = new Map();

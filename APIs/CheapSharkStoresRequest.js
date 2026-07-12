@@ -9,7 +9,6 @@ export class CheapSharkStoresRequest{
     }
 
     getQueryString(){
-        console.warn("Warning: requested query string from CheapSharkDealsRequest which has no query params.");
         return "";
     }
 }
